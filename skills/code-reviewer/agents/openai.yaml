@@ -1,0 +1,7 @@
+interface:
+  display_name: "Code Reviewer"
+  short_description: "Рев'ю змін у цьому проєкті"
+  default_prompt: "Use $code-reviewer to review my changes in this schedule_askue project before commit."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Debugging Wizard"
+  short_description: "Пошук логічних помилок у графіку"
+  default_prompt: "Use $debugging-wizard to diagnose wrong schedule output in this schedule_askue project."
+
+policy:
+  allow_implicit_invocation: true

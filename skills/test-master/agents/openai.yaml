@@ -1,0 +1,7 @@
+interface:
+  display_name: "Test Master"
+  short_description: "Тести для generator і validator"
+  default_prompt: "Use $test-master to add focused tests for this schedule_askue project."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Debug Skill"
+  short_description: "Налагодження збоїв і runtime-помилок"
+  default_prompt: "Use $debug-skill to debug a runtime failure in this schedule_askue project."
+
+policy:
+  allow_implicit_invocation: true
