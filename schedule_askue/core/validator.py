@@ -49,6 +49,7 @@ class ScheduleValidator:
         prev_month_tail: dict[int, dict[int, str]] | None = None,
         month_info: dict[int, object] | None = None,
         wishes: list[Wish] | None = None,
+        extra_day_off_usage: dict[int, int] | None = None,
     ) -> list[ValidationError]:
         settings = settings or {}
         year = int(settings.get("schedule_year", "0") or 0)
@@ -96,7 +97,13 @@ class ScheduleValidator:
             )
         )
         errors.extend(
-            self._validate_work_day_norm(schedule, employees, settings, month_info)
+            self._validate_work_day_norm(
+                schedule,
+                employees,
+                settings,
+                month_info,
+                extra_day_off_usage or {},
+            )
         )
         errors.extend(
             self._validate_personal_rules(
@@ -376,6 +383,7 @@ class ScheduleValidator:
         employees: list[Employee],
         settings: dict[str, str],
         month_info: dict[int, object] | None,
+        extra_day_off_usage: dict[int, int],
     ) -> list[ValidationError]:
         errors: list[ValidationError] = []
         tolerance = int(settings.get("work_days_tolerance", "0"))
@@ -395,6 +403,7 @@ class ScheduleValidator:
                 days=schedule.get(employee_id, {}),
                 working_days=working_days,
                 month_days=calendar.monthrange(year, month)[1],
+                used_extra_days_off=extra_day_off_usage.get(employee_id, 0),
             )
             if abs(deviation) > tolerance:
                 state = "переробка" if deviation > 0 else "недобір"

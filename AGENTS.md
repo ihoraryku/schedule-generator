@@ -12,6 +12,8 @@ Windows desktop app (.exe) for automated monthly work schedule generation.
 - **Stack:** Python 3.12 + PyQt6 6.7+ + SQLite 3 + priority_scheduler (heuristic) + openpyxl + reportlab
 - **Run:** `python -m schedule_askue.main` (from project root)
 - **Tests:** `python -m unittest discover -s tests`
+- **Format changed files:** `python -m ruff format <files>`
+- **Lint:** `python -m ruff check schedule_askue tests`
 - **Config:** `config.yaml` (NOT `config.toml`)
 - **Directory:** `schedule_askue/` (NOT `app/`)
 
@@ -43,6 +45,7 @@ Read `README.md` for full details. Key modules:
 | PyQt6 crash or runtime error | `debug-skill` |
 | Wrong schedule output (algorithm logic) | `debugging-wizard` |
 | Writing tests for a module | `test-master` |
+| Formatting / linting Python | `ruff format` → `ruff check` |
 | Before every commit | `code-reviewer` |
 
 ---
@@ -102,6 +105,7 @@ Read `README.md` for full details. Key modules:
 - Never hardcode employee names — always read from DB
 - No `# TODO` or bare `pass` in core logic
 - Do not use `QThread` directly — use `WorkerBase` wrapper
+- Use Ruff for formatting and linting. Format changed Python files with `python -m ruff format <files>`, then run `python -m ruff check schedule_askue tests`.
 
 ---
 

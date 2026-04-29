@@ -52,7 +52,7 @@ def _normalize_auto_width_payload(payload: object) -> object:
             normalized_key = int(key)
             normalized_value = int(value)
         except (TypeError, ValueError):
-                continue
+            continue
         normalized[normalized_key] = normalized_value
 
     return normalized
@@ -791,6 +791,7 @@ class Repository:
     def save_table_column_widths(self, table_name: str, widths: dict[int, int]) -> None:
         """Зберегти ширину колонок таблиці в налаштування."""
         import json
+
         key = f"table_width_{table_name}"
         value = json.dumps(widths)
         with self.connect() as conn:
@@ -806,6 +807,7 @@ class Repository:
     def get_table_column_widths(self, table_name: str) -> dict[int, int] | None:
         """Отримати збережену ширину колонок таблиці."""
         import json
+
         key = f"table_width_{table_name}"
         settings = self.get_settings()
         value = settings.get(key)
@@ -824,6 +826,7 @@ class Repository:
     ) -> None:
         """Автоматично зберегти ширину колонок без повідомлення."""
         import json
+
         key = f"auto_width_{tab_name}_{table_name}"
         value = json.dumps(widths)
         with self.connect() as conn:
@@ -841,6 +844,7 @@ class Repository:
     ) -> dict[int, int] | dict[str, dict[int, int]] | None:
         """Отримати автоматично зберегену ширину колонок."""
         import json
+
         key = f"auto_width_{tab_name}_{table_name}"
         settings = self.get_settings()
         value = settings.get(key)
@@ -853,8 +857,6 @@ class Repository:
             except (json.JSONDecodeError, TypeError):
                 pass
         return None
-
-
 
     def get_extra_day_off_balances(self) -> dict[int, int]:
         with self.connect() as conn:
@@ -901,6 +903,25 @@ class Repository:
                 (schedule_year, schedule_month),
             ).fetchall()
         return {int(row["employee_id"]): int(row["used_days"]) for row in rows}
+
+    def calculate_planned_extra_day_off_usage(
+        self,
+        year: int,
+        month: int,
+        assignments: dict[int, dict[int, str]],
+    ) -> dict[int, int]:
+        planned_map = self.get_planned_extra_days_off_map(year, month)
+        if not planned_map:
+            return {}
+
+        settings = self.get_settings()
+        calendar = UkrainianCalendar(
+            martial_law=settings.get("martial_law", "1") == "1"
+        )
+        month_info = calendar.get_month_info(year, month)
+        return self._calculate_planned_extra_day_off_usage(
+            assignments, planned_map, month_info
+        )
 
     def create_extra_day_off_operation(
         self,

@@ -1,0 +1,7 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["schedule_askue", "tests"]
+
+[tool.ruff.lint]
+select = ["E7", "E9", "F821", "F822", "F823"]

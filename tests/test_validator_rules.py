@@ -146,6 +146,39 @@ class ValidatorRulesTests(unittest.TestCase):
         ]
         self.assertEqual(norm_warnings_relaxed, [])
 
+    def test_used_extra_days_close_work_day_norm_underwork(self) -> None:
+        validator = ScheduleValidator()
+        employees = [Employee(1, "Арику І.В.", "Арику І.В.", "mixed")]
+        schedule = {1: {day: ("Д" if day <= 16 else "В") for day in range(1, 32)}}
+        month_info = {
+            day: type(
+                "DayInfo",
+                (),
+                {
+                    "is_weekend": day > 21,
+                    "is_holiday": False,
+                    "is_working_day": day <= 21,
+                },
+            )()
+            for day in range(1, 32)
+        }
+
+        errors = validator.validate(
+            schedule,
+            employees,
+            rules=[],
+            settings={
+                "schedule_year": "2026",
+                "schedule_month": "5",
+                "work_days_tolerance": "0",
+            },
+            month_info=month_info,
+            extra_day_off_usage={1: 5},
+        )
+
+        norm_warnings = [error for error in errors if error.type == "work_day_norm"]
+        self.assertEqual(norm_warnings, [])
+
     def test_repository_resets_split_ch_to_mixed(self) -> None:
         temp_dir = tempfile.mkdtemp()
         try:

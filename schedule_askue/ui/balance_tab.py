@@ -102,10 +102,15 @@ class BalanceTab(QWidget):
         self._build_ui()
         self.reload_data()
         self._restore_auto_layout()
-        
+
         # Підключити auto-save для всіх таблиць
-        for table in [self.balance_table, self.plan_table, self.compensation_table,
-                    self.operations_table, self.compensation_actions_table]:
+        for table in [
+            self.balance_table,
+            self.plan_table,
+            self.compensation_table,
+            self.operations_table,
+            self.compensation_actions_table,
+        ]:
             table.set_auto_save_callback(self._save_auto_layout)
 
     def _build_ui(self) -> None:
@@ -223,15 +228,9 @@ class BalanceTab(QWidget):
         compensation_actions = QHBoxLayout()
         compensation_actions.setContentsMargins(0, 0, 0, 0)
         compensation_actions.setSpacing(3)
-        apply_current_extra_off_button = QPushButton(
-            "Вихідні (поточний місяць)", self
-        )
-        apply_next_work_button = QPushButton(
-            "Робота (наступний місяць)", self
-        )
-        apply_next_extra_off_button = QPushButton(
-            "Вихідні (наступний місяць)", self
-        )
+        apply_current_extra_off_button = QPushButton("Вихідні (поточний місяць)", self)
+        apply_next_work_button = QPushButton("Робота (наступний місяць)", self)
+        apply_next_extra_off_button = QPushButton("Вихідні (наступний місяць)", self)
         apply_balance_credit_button = QPushButton("Додати в баланс", self)
         for button in (
             apply_current_extra_off_button,
@@ -315,7 +314,9 @@ class BalanceTab(QWidget):
         balance_layout.addWidget(self.summary_label)
         balance_layout.addWidget(self.balance_table)
 
-        plan_group = CollapsibleGroupBox("План додаткових вихідних", self, collapsed=False)
+        plan_group = CollapsibleGroupBox(
+            "План додаткових вихідних", self, collapsed=False
+        )
         plan_group.setStyleSheet(
             "QGroupBox { font-size: 12px; font-weight: 600; } QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 4px; }"
         )
@@ -326,7 +327,9 @@ class BalanceTab(QWidget):
         plan_layout.addLayout(plan_actions)
         plan_layout.addWidget(self.plan_table)
 
-        compensation_group = CollapsibleGroupBox("Компенсація норми", self, collapsed=True)
+        compensation_group = CollapsibleGroupBox(
+            "Компенсація норми", self, collapsed=True
+        )
         compensation_group.setStyleSheet(
             "QGroupBox { font-size: 12px; font-weight: 600; } QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 4px; }"
         )
@@ -346,7 +349,9 @@ class BalanceTab(QWidget):
         operations_layout.setSpacing(2)
         operations_layout.addWidget(self.operations_table)
 
-        compensation_journal_group = CollapsibleGroupBox("Журнал компенсацій", self, collapsed=True)
+        compensation_journal_group = CollapsibleGroupBox(
+            "Журнал компенсацій", self, collapsed=True
+        )
         compensation_journal_group.setStyleSheet(
             "QGroupBox { font-size: 12px; font-weight: 600; } QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 4px; }"
         )
@@ -354,6 +359,10 @@ class BalanceTab(QWidget):
         compensation_journal_layout.setContentsMargins(4, 4, 4, 4)
         compensation_journal_layout.setSpacing(2)
         compensation_journal_layout.addWidget(self.compensation_actions_table)
+
+        compensation_group.setCollapsed(True)
+        compensation_journal_group.setCollapsed(True)
+        operations_group.setCollapsed(True)
 
         layout.addWidget(title)
         layout.addLayout(controls)
@@ -406,25 +415,25 @@ class BalanceTab(QWidget):
             weights={0: 75, 1: 25},
             min_widths={0: 120, 1: 80},
         )
-        
+
         # План таблиця (6 колонок)
         self.plan_table.apply_proportional_widths(
             weights={0: 24, 1: 12, 2: 10, 3: 10, 4: 10, 5: 34},
             min_widths={0: 120, 1: 70, 2: 60, 3: 60, 4: 70, 5: 100},
         )
-        
+
         # Компенсація таблиця (8 колонок)
         self.compensation_table.apply_proportional_widths(
             weights={0: 18, 1: 8, 2: 8, 3: 10, 4: 8, 5: 12, 6: 12, 7: 24},
             min_widths={0: 120, 1: 60, 2: 70, 3: 90, 4: 60, 5: 80, 6: 90, 7: 150},
         )
-        
+
         # Журнал операцій (6 колонок)
         self.operations_table.apply_proportional_widths(
             weights={0: 24, 1: 14, 2: 8, 3: 12, 4: 28, 5: 14},
             min_widths={0: 120, 1: 80, 2: 60, 3: 80, 4: 140, 5: 100},
         )
-        
+
         # Журнал компенсацій (6 колонок)
         self.compensation_actions_table.apply_proportional_widths(
             weights={0: 22, 1: 18, 2: 8, 3: 14, 4: 24, 5: 14},
@@ -438,12 +447,19 @@ class BalanceTab(QWidget):
         all_widths["plan"] = self.plan_table.get_column_widths()
         all_widths["compensation"] = self.compensation_table.get_column_widths()
         all_widths["operations"] = self.operations_table.get_column_widths()
-        all_widths["compensation_actions"] = self.compensation_actions_table.get_column_widths()
+        all_widths["compensation_actions"] = (
+            self.compensation_actions_table.get_column_widths()
+        )
 
         self.repository.auto_save_table_widths("balance_tab", "all", all_widths)
 
-        for table in [self.balance_table, self.plan_table, self.compensation_table,
-                    self.operations_table, self.compensation_actions_table]:
+        for table in [
+            self.balance_table,
+            self.plan_table,
+            self.compensation_table,
+            self.operations_table,
+            self.compensation_actions_table,
+        ]:
             table.reset_to_stretch()
 
     def _restore_auto_layout(self) -> None:
@@ -465,7 +481,9 @@ class BalanceTab(QWidget):
             self.operations_table.set_column_widths(widths["operations"])
             self.operations_table.enable_resize_mode()
         if "compensation_actions" in widths:
-            self.compensation_actions_table.set_column_widths(widths["compensation_actions"])
+            self.compensation_actions_table.set_column_widths(
+                widths["compensation_actions"]
+            )
             self.compensation_actions_table.enable_resize_mode()
 
     def reload_data(self) -> None:

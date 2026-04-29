@@ -126,6 +126,7 @@ SQLite-налаштування використовуються як runtime-ov
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 python -m schedule_askue.main
 ```
 
@@ -139,6 +140,10 @@ python -m schedule_askue.main
 - `reportlab` — експорт у PDF
 - `PyYAML` — читання config.yaml
 
+Dev-залежності встановлюються окремо з `requirements-dev.txt`:
+
+- `ruff` — форматування і базовий lint Python-коду
+
 ## Тести і технічна перевірка
 
 Базові перевірки, які варто запускати після змін:
@@ -146,6 +151,7 @@ python -m schedule_askue.main
 ```powershell
 .venv\Scripts\python.exe -m unittest discover -s tests
 .venv\Scripts\python.exe -m compileall schedule_askue tests
+.venv\Scripts\python.exe -m ruff check schedule_askue tests
 ```
 
 ## Troubleshooting
@@ -202,6 +208,15 @@ pip install -r requirements.txt
 ```powershell
 .venv\Scripts\python.exe -m compileall schedule_askue tests
 ```
+
+### Форматування і lint
+
+```powershell
+.venv\Scripts\python.exe -m ruff format path\to\changed_file.py
+.venv\Scripts\python.exe -m ruff check schedule_askue tests
+```
+
+Примітка: повне форматування всього дерева варто робити окремим cleanup-комітом, щоб не змішувати функціональні зміни з великим форматним diff.
 
 ## Актуальні робочі документи
 

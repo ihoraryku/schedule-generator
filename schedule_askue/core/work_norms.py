@@ -37,6 +37,7 @@ def employee_work_delta(
     days: dict[int, str],
     working_days: int,
     month_days: int,
+    used_extra_days_off: int = 0,
 ) -> tuple[int, int, int]:
     vacation_days = count_vacation_days(days)
     target = employee_base_target_work(
@@ -45,6 +46,7 @@ def employee_work_delta(
         month_days=month_days,
         vacation_days=vacation_days,
     )
+    target = max(0, target - max(0, used_extra_days_off))
     actual = count_actual_work_days(days)
     return actual, target, actual - target
 

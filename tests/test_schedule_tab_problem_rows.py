@@ -62,3 +62,44 @@ class ScheduleTabProblemRowsTests(unittest.TestCase):
             gc.collect()
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_stats_show_used_extra_days_from_current_table(self) -> None:
+        temp_dir = tempfile.mkdtemp()
+        try:
+            repo = Repository(Path(temp_dir) / "schedule.db")
+            repo.initialize()
+            employees = repo.list_employees()
+            employee = employees[0]
+            self.assertIsNotNone(employee.id)
+            employee_id = int(employee.id)
+
+            repo.save_planned_extra_days_off(
+                employee_id=employee_id,
+                year=2026,
+                month=2,
+                planned_days=2,
+                note="Перевірка статистики",
+            )
+            assignments = {
+                int(emp.id): {day: "Д" for day in range(1, 29)}
+                for emp in employees
+                if emp.id is not None
+            }
+            repo.save_schedule(2026, 2, assignments)
+
+            tab = ScheduleTab(repo, UkrainianCalendar(martial_law=True))
+            tab.current_year = 2026
+            tab.current_month = 2
+            tab.reload_table()
+            tab.table.item(0, 2).setText("В")
+            tab.table.item(0, 3).setText("В")
+            tab._refresh_stats()
+
+            self.assertEqual(
+                tab.stats_table.horizontalHeaderItem(2).text(), "Викор. дод. вихідних"
+            )
+            self.assertEqual(tab.stats_table.item(0, 2).text(), "2")
+            del repo
+            gc.collect()
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)

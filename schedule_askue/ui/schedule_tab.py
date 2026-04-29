@@ -52,6 +52,7 @@ from schedule_askue.core.shift_codes import (
 )
 from schedule_askue.core.work_norms import employee_work_delta
 from schedule_askue.core.validator import ScheduleValidator, ValidationError
+from schedule_askue.db.models import Employee
 from schedule_askue.db.repository import Repository
 from schedule_askue.export.excel_exporter import ExcelExporter
 from schedule_askue.export.pdf_exporter import PdfExporter
@@ -232,7 +233,7 @@ class ScheduleTab(QWidget):
         self._build_ui()
         self.reload_table()
         self._restore_auto_layout()
-        
+
         # Підключити auto-save
         self.table.set_auto_save_callback(self._save_auto_layout)
 
@@ -640,7 +641,9 @@ class ScheduleTab(QWidget):
 
     def _save_auto_layout(self) -> None:
         """Автоматично зберегти ширину колонок."""
-        self.repository.auto_save_table_widths("scheduleTab", "main", self.table.get_column_widths())
+        self.repository.auto_save_table_widths(
+            "scheduleTab", "main", self.table.get_column_widths()
+        )
         self.table.reset_to_stretch()
 
     def _restore_auto_layout(self) -> None:
@@ -676,9 +679,44 @@ class ScheduleTab(QWidget):
 
     def _apply_stats_table_proportions(self) -> None:
         """Застосувати пропорційні ширини для таблиці статистики."""
+        header = self.stats_table.horizontalHeader()
+
+        def header_min_width(column: int, fallback: int) -> int:
+            item = self.stats_table.horizontalHeaderItem(column)
+            if item is None:
+                return fallback
+            return max(
+                fallback, header.fontMetrics().horizontalAdvance(item.text()) + 18
+            )
+
         self.stats_table.apply_proportional_widths(
-            weights={0: 20, 1: 12, 2: 8, 3: 8, 4: 8, 5: 8, 6: 12, 7: 10, 8: 8, 9: 10},
-            min_widths={0: 140, 1: 90, 2: 50, 3: 50, 4: 50, 5: 50, 6: 90, 7: 80, 8: 60, 9: 80}
+            weights={
+                0: 18,
+                1: 12,
+                2: 12,
+                3: 6,
+                4: 6,
+                5: 6,
+                6: 6,
+                7: 12,
+                8: 14,
+                9: 9,
+                10: 9,
+            },
+            min_widths={
+                0: 170,
+                1: header_min_width(1, 118),
+                2: header_min_width(2, 118),
+                3: 70,
+                4: 70,
+                5: 70,
+                6: 70,
+                7: header_min_width(7, 135),
+                8: header_min_width(8, 155),
+                9: 110,
+                10: 100,
+            },
+            stretch_last=False,
         )
 
     def _go_prev_month(self) -> None:
@@ -1112,7 +1150,9 @@ class ScheduleTab(QWidget):
         box.exec()
         clicked = box.clickedButton()
         if clicked is save_button:
-            self._save_schedule_core(self._collect_assignments_from_table(include_all=True))
+            self._save_schedule_core(
+                self._collect_assignments_from_table(include_all=True)
+            )
             return True
         if clicked is discard_button:
             self._dirty = False
@@ -1142,7 +1182,9 @@ class ScheduleTab(QWidget):
         box.exec()
         clicked = box.clickedButton()
         if clicked is save_button:
-            self._save_schedule_core(self._collect_assignments_from_table(include_all=True))
+            self._save_schedule_core(
+                self._collect_assignments_from_table(include_all=True)
+            )
             return True
         if clicked is continue_button:
             return True
@@ -1152,7 +1194,9 @@ class ScheduleTab(QWidget):
         if not self._dirty:
             return
         try:
-            self._save_schedule_core(self._collect_assignments_from_table(include_all=True))
+            self._save_schedule_core(
+                self._collect_assignments_from_table(include_all=True)
+            )
         except Exception:
             logger.exception("Помилка автозбереження графіка")
             self.save_state_label.setText("Автозбереження не вдалося")
@@ -1381,23 +1425,36 @@ class ScheduleTab(QWidget):
             / self.project_config.get("export", {}).get("default_dir", "./exports")
         ).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Отримати шаблон назви файлу з конфігу
-        filename_template = self.project_config.get("export", {}).get("filename_template", {}).get("excel", "Графік_{year}_{month:02d}.xlsx")
-        
+        filename_template = (
+            self.project_config.get("export", {})
+            .get("filename_template", {})
+            .get("excel", "Графік_{year}_{month:02d}.xlsx")
+        )
+
         # Словник для форматування
         month_names_ua = {
-            1: "СІЧЕНЬ", 2: "ЛЮТИЙ", 3: "БЕРЕЗЕНЬ", 4: "КВІТЕНЬ",
-            5: "ТРАВЕНЬ", 6: "ЧЕРВЕНЬ", 7: "ЛИПЕНЬ", 8: "СЕРПЕНЬ",
-            9: "ВЕРЕСЕНЬ", 10: "ЖОВТЕНЬ", 11: "ЛИСТОПАД", 12: "ГРУДЕНЬ"
+            1: "СІЧЕНЬ",
+            2: "ЛЮТИЙ",
+            3: "БЕРЕЗЕНЬ",
+            4: "КВІТЕНЬ",
+            5: "ТРАВЕНЬ",
+            6: "ЧЕРВЕНЬ",
+            7: "ЛИПЕНЬ",
+            8: "СЕРПЕНЬ",
+            9: "ВЕРЕСЕНЬ",
+            10: "ЖОВТЕНЬ",
+            11: "ЛИСТОПАД",
+            12: "ГРУДЕНЬ",
         }
-        
+
         default_name = filename_template.format(
             year=self.current_year,
             month=self.current_month,
-            month_name_ua=month_names_ua.get(self.current_month, "")
+            month_name_ua=month_names_ua.get(self.current_month, ""),
         )
-        
+
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Зберегти Excel",
@@ -1430,23 +1487,36 @@ class ScheduleTab(QWidget):
             / self.project_config.get("export", {}).get("default_dir", "./exports")
         ).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Отримати шаблон назви файлу з конфігу
-        filename_template = self.project_config.get("export", {}).get("filename_template", {}).get("pdf", "Графік_{year}_{month:02d}.pdf")
-        
+        filename_template = (
+            self.project_config.get("export", {})
+            .get("filename_template", {})
+            .get("pdf", "Графік_{year}_{month:02d}.pdf")
+        )
+
         # Словник для форматування
         month_names_ua = {
-            1: "СІЧЕНЬ", 2: "ЛЮТИЙ", 3: "БЕРЕЗЕНЬ", 4: "КВІТЕНЬ",
-            5: "ТРАВЕНЬ", 6: "ЧЕРВЕНЬ", 7: "ЛИПЕНЬ", 8: "СЕРПЕНЬ",
-            9: "ВЕРЕСЕНЬ", 10: "ЖОВТЕНЬ", 11: "ЛИСТОПАД", 12: "ГРУДЕНЬ"
+            1: "СІЧЕНЬ",
+            2: "ЛЮТИЙ",
+            3: "БЕРЕЗЕНЬ",
+            4: "КВІТЕНЬ",
+            5: "ТРАВЕНЬ",
+            6: "ЧЕРВЕНЬ",
+            7: "ЛИПЕНЬ",
+            8: "СЕРПЕНЬ",
+            9: "ВЕРЕСЕНЬ",
+            10: "ЖОВТЕНЬ",
+            11: "ЛИСТОПАД",
+            12: "ГРУДЕНЬ",
         }
-        
+
         default_name = filename_template.format(
             year=self.current_year,
             month=self.current_month,
-            month_name_ua=month_names_ua.get(self.current_month, "")
+            month_name_ua=month_names_ua.get(self.current_month, ""),
         )
-        
+
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Зберегти PDF", str(output_dir / default_name), "PDF Document (*.pdf)"
         )
@@ -1553,6 +1623,9 @@ class ScheduleTab(QWidget):
             self.current_year, self.current_month
         )
         assignments = self._collect_assignments_from_table(include_all=True)
+        extra_day_off_usage = self.repository.calculate_planned_extra_day_off_usage(
+            self.current_year, self.current_month, assignments
+        )
         errors = self.validator.validate(
             assignments,
             employees,
@@ -1564,6 +1637,7 @@ class ScheduleTab(QWidget):
                 self.current_year, self.current_month
             ),
             wishes=wishes,
+            extra_day_off_usage=extra_day_off_usage,
         )
         self._render_validation(errors)
         return errors
@@ -1905,6 +1979,12 @@ class ScheduleTab(QWidget):
         employees = self.repository.list_employees()
         assignments = self._collect_assignments_from_table(include_all=True)
         balances = self.repository.get_extra_day_off_balances()
+        planned_extra_days = self.repository.get_planned_extra_days_off_map(
+            self.current_year, self.current_month
+        )
+        used_extra_days = self.repository.calculate_planned_extra_day_off_usage(
+            self.current_year, self.current_month, assignments
+        )
         working_days_norm = (
             self.calendar_ua.get_production_norm(self.current_year, self.current_month)
             // 8
@@ -1916,17 +1996,24 @@ class ScheduleTab(QWidget):
         headers = [
             "Співробітник",
             "Баланс дод. вихідних",
+            "Викор. дод. вихідних",
             "Д",
             "Р",
             "В",
             "О",
             "Всього відпрацьовано",
-            "Норма роб. днів",
+            "Скориг. норма роб. днів",
             "Відхилення",
             "Стан",
         ]
         self.stats_table.setColumnCount(len(headers))
         self.stats_table.setHorizontalHeaderLabels(headers)
+        norm_header = self.stats_table.horizontalHeaderItem(8)
+        if norm_header is not None:
+            norm_header.setToolTip(
+                "Змінена норма робочих днів з урахуванням використаних "
+                "додаткових вихідних."
+            )
         self.stats_table.setRowCount(len(employees))
 
         for row_index, employee in enumerate(employees):
@@ -1941,12 +2028,14 @@ class ScheduleTab(QWidget):
                 days=days,
                 working_days=working_days_norm,
                 month_days=month_days,
+                used_extra_days_off=used_extra_days.get(employee_id, 0),
             )
             state_text, state_color = self._stats_state(deviation, tolerance)
 
             values = [
                 employee.short_name,
                 str(balances.get(employee_id, 0)),
+                str(used_extra_days.get(employee_id, 0)),
                 str(short_count),
                 str(full_count),
                 str(off_count),
@@ -1963,15 +2052,15 @@ class ScheduleTab(QWidget):
                     if column_index != 0
                     else Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
                 )
-                if column_index == 9:
+                if column_index == 10:
                     item.setBackground(state_color)
-                elif column_index in {2, 3, 6, 7}:
+                elif column_index in {3, 4, 7, 8}:
                     item.setBackground(QColor("#E8F1FB"))
-                elif column_index in {4, 5}:
+                elif column_index in {5, 6}:
                     item.setBackground(QColor("#F6F1DD"))
-                elif column_index == 1:
+                elif column_index in {1, 2}:
                     item.setBackground(QColor("#E9F4E8"))
-                elif column_index == 8:
+                elif column_index == 9:
                     item.setBackground(QColor("#F8EEE1"))
                 if column_index == 0:
                     item.setToolTip(employee.full_name)
@@ -1980,7 +2069,20 @@ class ScheduleTab(QWidget):
                         font = item.font()
                         font.setBold(True)
                         item.setFont(font)
-                if employee_id in problem_ids and column_index == 9:
+                if column_index == 2:
+                    plan = planned_extra_days.get(employee_id)
+                    planned_count = plan.planned_days if plan else 0
+                    item.setToolTip(
+                        "Використано в поточному графіку: "
+                        f"{used_extra_days.get(employee_id, 0)} "
+                        f"з {planned_count} запланованих."
+                    )
+                if column_index == 8:
+                    item.setToolTip(
+                        "Змінена норма робочих днів з урахуванням використаних "
+                        "додаткових вихідних."
+                    )
+                if employee_id in problem_ids and column_index == 10:
                     item.setToolTip(
                         "У працівника є активні проблеми валідації. Скористайтесь правою панеллю 'Проблеми'."
                     )
@@ -1997,7 +2099,8 @@ class ScheduleTab(QWidget):
         )
         employee_count = len(employees)
         self.norm_status_label.setText(
-            f"Співробітників: {employee_count} | Норма: {working_days_norm} дн. ({hour_norm} год)"
+            f"Співробітників: {employee_count} | Загальна місячна норма: "
+            f"{working_days_norm} дн. ({hour_norm} год)"
         )
 
     def _stats_state(self, deviation: int, tolerance: int) -> tuple[str, QColor]:
