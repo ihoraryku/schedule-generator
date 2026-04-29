@@ -1,0 +1,20 @@
+# Keep text files stable across Windows and Linux.
+* text=auto eol=lf
+
+# Windows command scripts conventionally use CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary artifacts must never be line-ending-normalized.
+*.db binary
+*.db.example binary
+*.sqlite binary
+*.sqlite3 binary
+*.xlsx binary
+*.xls binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.exe binary

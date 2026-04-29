@@ -9,6 +9,7 @@ from PyQt6.QtGui import QScreen
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget, QVBoxLayout, QWidget
 
 from schedule_askue.core.calendar_ua import UkrainianCalendar
+from schedule_askue.core.project_config import load_project_config
 from schedule_askue.db.repository import Repository
 from schedule_askue.ui.balance_tab import BalanceTab
 from schedule_askue.ui.rules_tab import RulesTab
@@ -29,7 +30,7 @@ class MainWindow(QMainWindow):
         self._schedule_snapshot_year: int | None = None
         self._schedule_snapshot_month: int | None = None
 
-        self.setWindowTitle("АСКУЕ — Генератор графіків")
+        self.setWindowTitle(self._configured_window_title())
         self.resize(1280, 780)
         self.setMinimumSize(800, 600)
 
@@ -40,6 +41,16 @@ class MainWindow(QMainWindow):
 
         self._build_ui()
         self._apply_style()
+
+    def _configured_window_title(self) -> str:
+        config = load_project_config(self.project_root)
+        project = config.get("project", {})
+        title = str(
+            project.get("window_title")
+            or project.get("name")
+            or "АСКУЕ — Генератор графіків"
+        ).strip()
+        return title or "АСКУЕ — Генератор графіків"
 
     def _build_ui(self) -> None:
         central = QWidget(self)
@@ -94,15 +105,15 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """При закритті вікна зберегти всі налаштування таблиць."""
-        if hasattr(self, 'balance_tab'):
+        if hasattr(self, "balance_tab"):
             self.balance_tab._save_auto_layout()
-        if hasattr(self, 'wishes_tab'):
+        if hasattr(self, "wishes_tab"):
             self.wishes_tab._save_auto_layout()
-        if hasattr(self, 'rules_tab'):
+        if hasattr(self, "rules_tab"):
             self.rules_tab._save_auto_layout()
-        if hasattr(self, 'schedule_tab'):
+        if hasattr(self, "schedule_tab"):
             self.schedule_tab._save_auto_layout()
-        if hasattr(self, 'staff_tab'):
+        if hasattr(self, "staff_tab"):
             self.staff_tab._save_auto_layout()
         super().closeEvent(event)
 
@@ -121,7 +132,7 @@ class MainWindow(QMainWindow):
         """Адаптувати layout під поточний розмір вікна."""
         width = self.width()
         height = self.height()
-        
+
         # Визначити категорію екрану
         if width < 1280:
             layout_mode = "compact"
@@ -129,7 +140,7 @@ class MainWindow(QMainWindow):
             layout_mode = "normal"
         else:
             layout_mode = "spacious"
-        
+
         # Зберегти режим для використання в дочірніх компонентах
         self.setProperty("layoutMode", layout_mode)
 

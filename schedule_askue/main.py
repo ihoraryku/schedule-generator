@@ -38,7 +38,9 @@ def configure_logging(project_root: Path) -> Path:
 
     file_level = _resolve_level(log_cfg.get("level", "DEBUG"))
     console_level = _resolve_level(log_cfg.get("console_level", "INFO"))
-    log_format = str(log_cfg.get("format", "%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+    log_format = str(
+        log_cfg.get("format", "%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    )
     log_file = str(log_cfg.get("file", "logs/app.log"))
     max_bytes = int(log_cfg.get("max_bytes", 5242880))
     backup_count = int(log_cfg.get("backup_count", 3))
@@ -72,8 +74,12 @@ def configure_logging(project_root: Path) -> Path:
         force=True,
     )
 
-    logger.info("Логування налаштовано: файл=%s (рівень=%s), консоль (рівень=%s)",
-                log_path, logging.getLevelName(file_level), logging.getLevelName(console_level))
+    logger.info(
+        "Логування налаштовано: файл=%s (рівень=%s), консоль (рівень=%s)",
+        log_path,
+        logging.getLevelName(file_level),
+        logging.getLevelName(console_level),
+    )
     return log_path
 
 
@@ -83,10 +89,15 @@ def install_exception_hook(log_path: Path) -> None:
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
         try:
-            logger.exception("Необроблена помилка в застосунку", exc_info=(exc_type, exc_value, exc_traceback))
+            logger.exception(
+                "Необроблена помилка в застосунку",
+                exc_info=(exc_type, exc_value, exc_traceback),
+            )
         except Exception:
             try:
-                traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stderr)
+                traceback.print_exception(
+                    exc_type, exc_value, exc_traceback, file=sys.stderr
+                )
             except Exception:
                 pass
         try:
@@ -103,15 +114,19 @@ def install_exception_hook(log_path: Path) -> None:
     sys.excepthook = _handle_exception
 
 
-def build_app() -> QApplication:
+def build_app(project_root: Path) -> QApplication:
     # Увімкнути High DPI scaling для 4K моніторів (PyQt6)
     # В PyQt6 High DPI увімкнено за замовчуванням, але можна налаштувати політику округлення
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
-    
+
+    config = load_project_config(project_root)
+    project = config.get("project", {})
+    application_name = str(project.get("name") or "Генератор графіків АСКУЕ").strip()
+
     app = QApplication(sys.argv)
-    app.setApplicationName("Генератор графіків АСКУЕ")
+    app.setApplicationName(application_name or "Генератор графіків АСКУЕ")
     app.setStyle("Fusion")
 
     palette = QPalette()
@@ -133,7 +148,7 @@ def build_app() -> QApplication:
 def main() -> int:
     project_root = Path(__file__).resolve().parent.parent
     log_path = configure_logging(project_root)
-    app = build_app()
+    app = build_app(project_root)
     install_exception_hook(log_path)
     repository = Repository(project_root / "schedule.db")
     repository.initialize()

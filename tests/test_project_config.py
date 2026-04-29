@@ -18,6 +18,7 @@ class ProjectConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             (root / "config.yaml").write_text(
+                "project:\n  window_title: Custom Window\n"
                 "document:\n  company_name: YAML\n"
                 "generation:\n  target_duty_per_day: 3\n",
                 encoding="utf-8",
@@ -25,6 +26,7 @@ class ProjectConfigTests(unittest.TestCase):
 
             config = load_project_config(root)
 
+            self.assertEqual(config["project"]["window_title"], "Custom Window")
             self.assertEqual(config["document"]["company_name"], "YAML")
             self.assertEqual(config["generation"]["target_duty_per_day"], 3)
 

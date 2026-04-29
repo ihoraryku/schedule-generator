@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_PROJECT_CONFIG: dict[str, Any] = {
     "project": {
         "name": "Генератор графіків АСКУЕ",
+        "window_title": "АСКУЕ — Генератор графіків",
         "language": "uk",
     },
     "archive": {
