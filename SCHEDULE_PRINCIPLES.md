@@ -84,7 +84,7 @@ repair-проходами або rebalance-свапами.
 - Прапор `martial_law` читається з `config.yaml` — ніколи не
   передбачається.
 - `special days` = лише вихідні (Сб+Нд), не святкові будні.
-- Робоча норма обчислюється через `calendar_ua.work_norm()` —
+- Робоча норма обчислюється через `UkrainianCalendar.get_production_norm()` або shared helpers з `work_norms.py` —
   ніколи не хардкодиться.
 
 ---

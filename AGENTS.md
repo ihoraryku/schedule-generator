@@ -10,7 +10,7 @@
 Windows desktop app (.exe) for automated monthly work schedule generation.
 
 - **Stack:** Python 3.12 + PyQt6 6.7+ + SQLite 3 + priority_scheduler (heuristic) + openpyxl + reportlab
-- **Run:** `python -m schedule_askue` (from project root)
+- **Run:** `python -m schedule_askue.main` (from project root)
 - **Tests:** `python -m unittest discover -s tests`
 - **Config:** `config.yaml` (NOT `config.toml`)
 - **Directory:** `schedule_askue/` (NOT `app/`)
@@ -75,7 +75,7 @@ Read `README.md` for full details. Key modules:
 ## Domain: Martial Law
 
 - `martial_law` flag lives in `config.yaml` — always read it, never assume its value
-- Always call `calendar_ua.work_norm()` — **never hardcode** monthly hour norms
+- Always call `UkrainianCalendar.get_production_norm()` or shared helpers from `work_norms.py` — **never hardcode** monthly hour norms
 - Work norms may differ from the standard calendar when `martial_law=true`
 
 ---

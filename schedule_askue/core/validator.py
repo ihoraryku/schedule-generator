@@ -887,6 +887,6 @@ class ScheduleValidator:
             normalized = normalize_shift_code(wish.comment)
             if normalized in WORK_CODES:
                 return normalized
-            return "Д"
-        mapping = {"vacation": "О", "day_off": "В", "work_day": "Д"}
+            return "Р"
+        mapping = {"vacation": "О", "day_off": "В", "work_day": "Р"}
         return mapping.get(wish.wish_type, "В")

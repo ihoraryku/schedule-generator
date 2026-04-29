@@ -29,7 +29,7 @@ class ProjectConfigTests(unittest.TestCase):
             self.assertEqual(config["generation"]["target_duty_per_day"], 3)
 
     def test_project_settings_overrides_flattens_generation_and_solver(self) -> None:
-        config = load_project_config(Path(r"D:\Projects\schedule-generator_python_2"))
+        config = load_project_config(Path(__file__).resolve().parents[1])
 
         settings = project_settings_overrides(config)
 

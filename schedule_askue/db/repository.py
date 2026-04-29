@@ -26,6 +26,38 @@ from schedule_askue.db.models import (
 logger = logging.getLogger(__name__)
 
 
+def _normalize_auto_width_payload(payload: object) -> object:
+    if not isinstance(payload, dict):
+        return payload
+
+    is_nested_payload = any(isinstance(value, dict) for value in payload.values())
+    normalized: dict[object, object] = {}
+    for key, value in payload.items():
+        if isinstance(value, dict):
+            normalized_key: object = key
+            if isinstance(key, str):
+                try:
+                    normalized_key = int(key)
+                except ValueError:
+                    normalized_key = key
+            normalized_value = _normalize_auto_width_payload(value)
+            normalized[normalized_key] = normalized_value
+            continue
+
+        if is_nested_payload:
+            normalized[key] = value
+            continue
+
+        try:
+            normalized_key = int(key)
+            normalized_value = int(value)
+        except (TypeError, ValueError):
+                continue
+        normalized[normalized_key] = normalized_value
+
+    return normalized
+
+
 class Repository:
     def __init__(self, db_path: Path) -> None:
         self.db_path = Path(db_path)
@@ -740,23 +772,6 @@ class Repository:
             settings["daily_shift_ch_count"] = settings["daily_shift_d_count"]
         return settings
 
-    def save_table_column_widths(self, table_name: str, widths: dict[int, int]) -> None:
-        """Зберегти ширину колонок таблиці в налаштування."""
-        import json
-        key = f"table_width_{table_name}"
-        value = json.dumps(widths)
-        with self.connect() as conn:
-            conn.execute(
-                """
-                INSERT INTO settings(key, value)
-                VALUES(?, ?)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value
-                """,
-                (key, value),
-            )
-
-    
-
     def save_settings(self, settings: dict[str, str]) -> None:
         payload = dict(settings)
         if "daily_shift_d_count" in payload and "daily_shift_ch_count" not in payload:
@@ -801,7 +816,12 @@ class Repository:
                 pass
         return None
 
-    def auto_save_table_widths(self, tab_name: str, table_name: str, widths: dict[int, int]) -> None:
+    def auto_save_table_widths(
+        self,
+        tab_name: str,
+        table_name: str,
+        widths: dict[int, int] | dict[str, dict[int, int]],
+    ) -> None:
         """Автоматично зберегти ширину колонок без повідомлення."""
         import json
         key = f"auto_width_{tab_name}_{table_name}"
@@ -816,7 +836,9 @@ class Repository:
                 (key, value),
             )
 
-    def get_auto_table_widths(self, tab_name: str, table_name: str) -> dict[int, int] | None:
+    def get_auto_table_widths(
+        self, tab_name: str, table_name: str
+    ) -> dict[int, int] | dict[str, dict[int, int]] | None:
         """Отримати автоматично зберегену ширину колонок."""
         import json
         key = f"auto_width_{tab_name}_{table_name}"
@@ -824,7 +846,10 @@ class Repository:
         value = settings.get(key)
         if value:
             try:
-                return json.loads(value)
+                payload = json.loads(value)
+                normalized = _normalize_auto_width_payload(payload)
+                if isinstance(normalized, dict):
+                    return normalized
             except (json.JSONDecodeError, TypeError):
                 pass
         return None

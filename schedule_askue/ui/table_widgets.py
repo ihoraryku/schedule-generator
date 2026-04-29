@@ -212,13 +212,18 @@ class GridTableWidget(QTableWidget):
         """Отримати поточну ширину всіх колонок."""
         return {col: self.columnWidth(col) for col in range(self.columnCount())}
 
-    def set_column_widths(self, widths: dict[int, int]) -> None:
+    def set_column_widths(self, widths: dict[object, object]) -> None:
         """Встановити ширину колонок."""
         header = self.horizontalHeader()
         for col, width in widths.items():
-            if 0 <= col < self.columnCount():
-                self.setColumnWidth(col, max(20, width))
-                header.setSectionResizeMode(col, QHeaderView.ResizeMode.Fixed)
+            try:
+                col_index = int(col)
+                width_value = int(width)
+            except (TypeError, ValueError):
+                continue
+            if 0 <= col_index < self.columnCount():
+                self.setColumnWidth(col_index, max(20, width_value))
+                header.setSectionResizeMode(col_index, QHeaderView.ResizeMode.Fixed)
 
     def enable_resize_mode(self) -> None:
         """Дозволити ручне розтягування колонок."""

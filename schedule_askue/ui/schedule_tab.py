@@ -205,6 +205,7 @@ class ScheduleTab(QWidget):
         self._last_saved_signature = ""
         self._show_problem_rows_only = False
         self._visible_employees = []
+        self._all_assignments: dict[int, dict[int, str]] = {}
         self._autosave_timer = QTimer(self)
         self._autosave_timer.setSingleShot(True)
         self._autosave_timer.setInterval(1200)
@@ -241,8 +242,13 @@ class ScheduleTab(QWidget):
         self.on_snapshot_changed(
             self.current_year,
             self.current_month,
-            assignments or self._collect_assignments_from_table(),
+            assignments or self._collect_assignments_from_table(include_all=True),
         )
+
+    def _current_employees(self, *, include_all: bool = False) -> list[Employee]:
+        if include_all:
+            return self.repository.list_employees()
+        return self._visible_employees or self.repository.list_employees()
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
@@ -716,6 +722,12 @@ class ScheduleTab(QWidget):
         )
         self._manual_flags = manual_flags
         self._auto_assignments = auto_assignments
+        self._all_assignments = {
+            employee_id: {
+                day: normalize_shift_code(value) for day, value in days.items()
+            }
+            for employee_id, days in saved_schedule.items()
+        }
         month_days = calendar.monthrange(self.current_year, self.current_month)[1]
         self.month_label.setText(
             f"{self.MONTH_NAMES_UA[self.current_month]} {self.current_year}"
@@ -857,6 +869,12 @@ class ScheduleTab(QWidget):
         self._auto_assignments = result["assignments"]
         self._history.clear()
         self._future.clear()
+        self._all_assignments = {
+            employee_id: {
+                day: normalize_shift_code(value) for day, value in days.items()
+            }
+            for employee_id, days in result["assignments"].items()
+        }
         self._manual_flags = {
             employee_id: {day: False for day in days}
             for employee_id, days in self._auto_assignments.items()
@@ -980,7 +998,7 @@ class ScheduleTab(QWidget):
 
     def save_schedule(self) -> None:
         try:
-            assignments = self._collect_assignments_from_table()
+            assignments = self._collect_assignments_from_table(include_all=True)
             self._save_schedule_core(assignments)
             validation_errors = self._run_validation()
             self._refresh_stats()
@@ -1094,7 +1112,7 @@ class ScheduleTab(QWidget):
         box.exec()
         clicked = box.clickedButton()
         if clicked is save_button:
-            self._save_schedule_core(self._collect_assignments_from_table())
+            self._save_schedule_core(self._collect_assignments_from_table(include_all=True))
             return True
         if clicked is discard_button:
             self._dirty = False
@@ -1124,7 +1142,7 @@ class ScheduleTab(QWidget):
         box.exec()
         clicked = box.clickedButton()
         if clicked is save_button:
-            self._save_schedule_core(self._collect_assignments_from_table())
+            self._save_schedule_core(self._collect_assignments_from_table(include_all=True))
             return True
         if clicked is continue_button:
             return True
@@ -1134,7 +1152,7 @@ class ScheduleTab(QWidget):
         if not self._dirty:
             return
         try:
-            self._save_schedule_core(self._collect_assignments_from_table())
+            self._save_schedule_core(self._collect_assignments_from_table(include_all=True))
         except Exception:
             logger.exception("Помилка автозбереження графіка")
             self.save_state_label.setText("Автозбереження не вдалося")
@@ -1193,7 +1211,7 @@ class ScheduleTab(QWidget):
     def _build_schedule_signature(
         self, assignments: dict[int, dict[int, str]] | None = None
     ) -> str:
-        payload = assignments or self._collect_assignments_from_table()
+        payload = assignments or self._collect_assignments_from_table(include_all=True)
         serializable = {
             str(employee_id): {str(day): value for day, value in days.items()}
             for employee_id, days in payload.items()
@@ -1476,9 +1494,34 @@ class ScheduleTab(QWidget):
         finally:
             self._end_table_update()
 
-    def _collect_assignments_from_table(self) -> dict[int, dict[int, str]]:
-        employees = self._visible_employees or self.repository.list_employees()
+    def _collect_assignments_from_table(
+        self, *, include_all: bool = False
+    ) -> dict[int, dict[int, str]]:
+        employees = self._current_employees(include_all=include_all)
         assignments: dict[int, dict[int, str]] = {}
+        if include_all:
+            assignments = {
+                employee.id: dict(self._all_assignments.get(employee.id, {}))
+                for employee in employees
+                if employee.id is not None
+            }
+            visible_ids = {
+                employee.id
+                for employee in self._visible_employees
+                if employee.id is not None
+            }
+            for row_index, employee in enumerate(self._visible_employees):
+                if employee.id is None or employee.id not in visible_ids:
+                    continue
+                employee_days = assignments.setdefault(employee.id, {})
+                for column in range(1, self.table.columnCount()):
+                    item = self.table.item(row_index, column)
+                    employee_days[column] = (
+                        normalize_shift_code(item.text().strip())
+                        if item is not None
+                        else ""
+                    )
+            return assignments
         for row_index, employee in enumerate(employees):
             if employee.id is None:
                 continue
@@ -1500,7 +1543,7 @@ class ScheduleTab(QWidget):
         return settings
 
     def _run_validation(self) -> list[ValidationError]:
-        employees = self._visible_employees or self.repository.list_employees()
+        employees = self.repository.list_employees()
         rules = self.repository.list_rules(self.current_year, self.current_month)
         wishes = self.repository.list_wishes(self.current_year, self.current_month)
         personal_rules = self.repository.list_personal_rules(
@@ -1509,7 +1552,7 @@ class ScheduleTab(QWidget):
         previous_month_tail = self.repository.get_previous_month_tail(
             self.current_year, self.current_month
         )
-        assignments = self._collect_assignments_from_table()
+        assignments = self._collect_assignments_from_table(include_all=True)
         errors = self.validator.validate(
             assignments,
             employees,
@@ -1530,7 +1573,7 @@ class ScheduleTab(QWidget):
         try:
             self._reset_cell_styles()
             self.problem_panel.clear()
-            employees = self.repository.list_employees()
+            employees = self._current_employees()
             employee_row_map = {
                 employee.id: index for index, employee in enumerate(employees)
             }
@@ -1860,7 +1903,7 @@ class ScheduleTab(QWidget):
 
     def _refresh_stats(self) -> None:
         employees = self.repository.list_employees()
-        assignments = self._collect_assignments_from_table()
+        assignments = self._collect_assignments_from_table(include_all=True)
         balances = self.repository.get_extra_day_off_balances()
         working_days_norm = (
             self.calendar_ua.get_production_norm(self.current_year, self.current_month)
@@ -2000,6 +2043,7 @@ class ScheduleTab(QWidget):
                 employee = employees[row]
                 employee_id = employee.id or 0
                 day = item.column()
+                self._all_assignments.setdefault(employee_id, {})[day] = value
                 old_manual = bool(
                     self._manual_flags.get(employee_id, {}).get(day, False)
                 )
